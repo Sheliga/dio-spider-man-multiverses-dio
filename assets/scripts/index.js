@@ -1,36 +1,69 @@
+let currentIndex = 0;
+let autoRotateInterval = null;
+let hasUserInteracted = false;
+
 function handleMouseEnter() {
-  this.classList.add('s-card--hovered');
+  this.classList.add("s-card--hovered");
   document.body.id = `${this.id}-hovered`;
 }
 
 function handleMouseLeave() {
-  this.classList.remove('s-card--hovered');
-  document.body.id = '';
+  this.classList.remove("s-card--hovered");
+  document.body.id = "";
 }
 
 function addEventListenersToCards() {
-  const cardElements = document.getElementsByClassName('s-card');
-  
-  for (let index = 0; index < cardElements.length; index++) {
-    const card = cardElements[index];
-    card.addEventListener('mouseenter', handleMouseEnter);
-    card.addEventListener('mouseleave', handleMouseLeave);
+  const cardElements = document.getElementsByClassName("s-card");
+  for (let card of cardElements) {
+    card.addEventListener("mouseenter", handleMouseEnter);
+    card.addEventListener("mouseleave", handleMouseLeave);
   }
 }
 
-document.addEventListener("DOMContentLoaded", addEventListenersToCards, false);
+function updateCarousel(index) {
+  const carousel = document.querySelector(".s-cards-carousel");
+  const rotateYDeg = -120 * index;
+  carousel.style.transform = `translateZ(-40vw) rotateY(${rotateYDeg}deg)`;
+
+  document.querySelectorAll(".s-controller__button").forEach((btn, idx) => {
+    btn.classList.toggle("s-controller__button--active", idx === index);
+    btn.setAttribute("aria-pressed", idx === index);
+  });
+}
+
+function startAutoRotate() {
+  autoRotateInterval = setInterval(() => {
+    if (hasUserInteracted) return;
+    currentIndex = (currentIndex + 1) % 3;
+    updateCarousel(currentIndex);
+  }, 3000); // 3 segundos entre rotações
+}
+
+function stopAutoRotate() {
+  if (autoRotateInterval) {
+    clearInterval(autoRotateInterval);
+    autoRotateInterval = null;
+  }
+}
 
 function selectCarouselItem(selectedButtonElement) {
-  const selectedItem = selectedButtonElement.id;
-  const carousel = document.querySelector('.s-cards-carousel');
-  const transform = carousel.style.transform;
-  const rotateY = transform.match(/rotateY\((-?\d+deg)\)/i);
-  const rotateYDeg = -120 * (Number(selectedItem) - 1);
-  const newTransform = transform.replace(rotateY[0], `rotateY(${rotateYDeg}deg)`);
+  hasUserInteracted = true;
+  stopAutoRotate();
 
-  carousel.style.transform = newTransform;
+  const selectedItem = parseInt(selectedButtonElement.id) - 1;
+  currentIndex = selectedItem;
 
-  const activeButtonElement = document.querySelector('.s-controller__button--active');
-  activeButtonElement.classList.remove('s-controller__button--active');
-  selectedButtonElement.classList.add('s-controller__button--active');
+  updateCarousel(currentIndex);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  addEventListenersToCards();
+
+  document.querySelectorAll(".s-controller__button").forEach((button) => {
+    button.addEventListener("click", function () {
+      selectCarouselItem(this);
+    });
+  });
+
+  startAutoRotate();
+});
